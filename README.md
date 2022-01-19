@@ -12,6 +12,15 @@ PowerShell Workshop Content
   ```powershell
   $b = [int32[]]::new(3)
   ```
+- PowerShell Cheat Sheets
+  - https://cdn.comparitech.com/wp-content/uploads/2018/08/Comparitech-Powershell-cheatsheet.pdf
+  - https://ramblingcookiemonster.github.io/images/Cheat-Sheets/powershell-basic-cheat-sheet2.pdf
+  - https://gitlab.com/JamesHedges/notes/-/wikis/Powershell/PowerShell-Cheat-Sheet
+  - https://www.theochem.ru.nl/~pwormer/teachmat/PS_cheat_sheet.html
+
+- When dealing with security information on NTFS volumes:
+  - https://www.powershellgallery.com/packages/NTFSSecurity/4.2.6
+  - https://github.com/raandree/NTFSSecurity
 
 ## Generic Code Samples
 - ### Get your local account and the group membership as SamAccountNames
@@ -41,7 +50,9 @@ PowerShell Workshop Content
 
 - ### String Concatenation / Formatting
 
-  -  Formatting a number as currency. The available formatters are documented in           [Standard numeric format strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings).
+  - Formatting a number as currency andin  many other ways.
+    
+    The available formatters are documented in           [Standard numeric format strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings).
     
     ```powershell
     1..10 | ForEach-Object { 'There is {0,20:C} on my bank account' -f (Get-Random -Minimum 10 -Maximum 10000) }
@@ -88,6 +99,80 @@ PowerShell Workshop Content
     ```
 
   - Adding properties and methods to existing can make data analysis way easier. Here we are getting data from a deeper level of the events and move them to the top. Things like grouping and filtering is easier now or makes it possible in the first place.
+  
+- ### DefaultParameterValues: Describes how to set custom default values for cmdlet parameters and advanced functions.
+
+  This sample is taken from the script [10 HyperV Full Lab with DSC and AzureDevOps.ps1](https://github.com/dsccommunity/DscWorkshop/blob/main/Lab/10%20HyperV%20Full%20Lab%20with%20DSC%20and%20AzureDevOps.ps1) and demonstrates, how to assign the following values to all machines without repeating it over and over again.  
+  
+  ```powershell  
+  $PSDefaultParameterValues = @{
+    'Add-LabMachineDefinition:Network'         = $labName
+    'Add-LabMachineDefinition:ToolsPath'       = "$labSources\Tools"
+    'Add-LabMachineDefinition:DomainName'      = 'contoso.com'
+    'Add-LabMachineDefinition:DnsServer1'      = '192.168.111.10'
+    'Add-LabMachineDefinition:OperatingSystem' = 'Windows Server 2022 Datacenter (Desktop Experience)'
+    'Add-LabMachineDefinition:Gateway'         = '192.168.111.50'
+  }
+  ```
+
+- ### A comparison of scriptblocks and functions
+
+  ```powershell
+  $cmd = {
+    param(
+        $Year
+    )
+    Get-Date -Year $Year
+  }
+
+  & $cmd 2000
+
+  function Get-MyDate {
+      param(
+          $Year
+      )
+      Get-Date -Year $Year
+  }
+
+  Get-MyDate -Year 2000
+
+  New-Item function:\Test1 -Value $cmd
+  ```
+
+- ### Dynamic ScriptBlocks
+  Scriptblock can also be created dynamically by converting text into a scriptblock
+
+  ```powershell
+  $year = 2000
+  $text = "Get-Date -Year $year"
+  $cmd = [scriptblock]::Create($text)
+
+  Invoke-LabCommand -ComputerName Lab2016DC1 -ScriptBlock $cmd -PassThru
+  ```
+
+- ### Injecting locally defined functions into a remote scope
+  Usually functions can only be called remotely if available on the remote machine. The function[```Add-FunctionToPSSession```](https://github.com/AutomatedLab/AutomatedLab.Common/blob/develop/AutomatedLab.Common/Common/Public/Add-FunctionToPSSession.ps1) can injects functions into remote PowerShell sessions. There is also a cmdlet [```Add-VariableToPSSession```](https://github.com/AutomatedLab/AutomatedLab.Common/blob/develop/AutomatedLab.Common/Common/Public/Add-VariableToPSSession.ps1).
+
+  ```powershell
+  function Set-W32TimeServiceState {
+      $s = Get-Service -Name W32Time
+      if ($s.Status -ne 'Running') {
+          Write-Host "Service '$($s.Name)' is not running on '$($env:COMPUTERNAME)', starting it..." -ForegroundColor Green
+          $s | Start-Service
+          Write-Host done -ForegroundColor Green
+      }
+      else {
+          Write-Host "Service '$($s.Name)' is already on '$($env:COMPUTERNAME)' running" -ForegroundColor Green
+      }
+      Start-Sleep -Seconds 5
+  }
+
+  $vms = Get-LabVM
+  $psSession = New-LabPSSession -ComputerName $vms
+  Add-FunctionToPSSession -Session $psSession -FunctionInfo (Get-Command -Name Set-W32TimeServiceState)
+  Invoke-LabCommand -ComputerName $vms -ScriptBlock { Set-W32TimeServiceState }
+  $psSession | Remove-PSSession
+  ```
 
 ## Terms
 - Class / Type
