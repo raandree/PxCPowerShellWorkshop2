@@ -1,6 +1,9 @@
 # PxCPowerShellWorkshop2
 PowerShell Workshop Content
 
+> If you want to clone this repository to you machine, follow the instructions in [Clone and use a GitHub repository in Visual Studio Code
+](https://docs.microsoft.com/en-us/azure/developer/javascript/how-to/with-visual-studio-code/clone-github-repository?tabs=create-repo-command-palette%2Cinitialize-repo-activity-bar%2Ccreate-branch-command-palette%2Ccommit-changes-command-palette%2Cpush-command-palette)
+
 ## Useful Links
 
 - [PowerShell Array Guide: How to Use and Create](https://www.varonis.com/blog/powershell-array)
