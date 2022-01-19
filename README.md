@@ -8,6 +8,7 @@ PowerShell Workshop Content
 ## Useful Links
 
 - > **One of the bst knowledge resources in the PowerShell space: [Powershell: Everything you wanted to know about...](https://powershellexplained.com/sitemap/?utm_source=blog&utm_medium=blog&utm_content=recent)**
+- > **[Advanced Functions Explained](https://github.com/raandree/PowerShellTraining): From a one-liner to a full featured advanced function and then to a module**
 - [PowerShell Array Guide: How to Use and Create](https://www.varonis.com/blog/powershell-array)
   This article also explains how to create strongly-typed arrays
 
@@ -178,6 +179,36 @@ PowerShell Workshop Content
   Add-FunctionToPSSession -Session $psSession -FunctionInfo (Get-Command -Name Set-W32TimeServiceState)
   Invoke-LabCommand -ComputerName $vms -ScriptBlock { Set-W32TimeServiceState }
   $psSession | Remove-PSSession
+  ```
+- ### Comparing ```Select-Object``` with ```Where-Object```
+  
+  ```powershell
+  #Horizontal "filtering" or rather selection of properties to return
+  Get-Process | Select-Object -Property ID, Name, WorkingSet
+
+  #returning the largest 5 processes considering the property WorkingSet, not exacly filtering
+  Get-Process | Sort-Object -Property WorkingSet -Descending | Select-Object -First 5
+
+  #really filtering giving an expression
+  Get-Process | Where-Object { $_.WorkingSet -gt 500MB }
+  Get-Process | Where-Object WorkingSet -gt 500MB
+  Get-Process | Where-Object -Property WorkingSet -GT -Value 500MB
+
+  #what Where-Object does internally
+  Get-Process | ForEach-Object {
+      if ($_.WorkingSet -gt 500MB) {
+          $_
+      }
+  }
+
+  #Some people expect the 1st code block to take less memory as for the selection of properties. In fact, it does not
+  #but is much slower
+  1..300 | ForEach-Object {
+      $p = Get-Process | Select-Object -Property Name, ID, WorkingSet
+  }
+  1..300 | ForEach-Object {
+      $p = Get-Process 
+  }
   ```
 
 &nbsp;
