@@ -3,9 +3,11 @@ PowerShell Workshop Content
 
 > If you want to clone this repository to you machine, follow the instructions in [Clone and use a GitHub repository in Visual Studio Code
 ](https://docs.microsoft.com/en-us/azure/developer/javascript/how-to/with-visual-studio-code/clone-github-repository?tabs=create-repo-command-palette%2Cinitialize-repo-activity-bar%2Ccreate-branch-command-palette%2Ccommit-changes-command-palette%2Cpush-command-palette). **In order to interact with Git repositories, download [git](https://git-scm.com/downloads)**.
-
+***
+&nbsp;
 ## Useful Links
 
+- > **One of the bst knowledge resources in the PowerShell space: [Powershell: Everything you wanted to know about...](https://powershellexplained.com/sitemap/?utm_source=blog&utm_medium=blog&utm_content=recent)**
 - [PowerShell Array Guide: How to Use and Create](https://www.varonis.com/blog/powershell-array)
   This article also explains how to create strongly-typed arrays
 
@@ -21,6 +23,8 @@ PowerShell Workshop Content
 - When dealing with security information on NTFS volumes:
   - https://www.powershellgallery.com/packages/NTFSSecurity/4.2.6
   - https://github.com/raandree/NTFSSecurity
+
+&nbsp;
 
 ## Generic Code Samples
 - ### Get your local account and the group membership as SamAccountNames
@@ -99,7 +103,9 @@ PowerShell Workshop Content
     ```
 
   - Adding properties and methods to existing can make data analysis way easier. Here we are getting data from a deeper level of the events and move them to the top. Things like grouping and filtering is easier now or makes it possible in the first place.
-  
+
+&nbsp;
+
 - ### DefaultParameterValues: Describes how to set custom default values for cmdlet parameters and advanced functions.
 
   This sample is taken from the script [10 HyperV Full Lab with DSC and AzureDevOps.ps1](https://github.com/dsccommunity/DscWorkshop/blob/main/Lab/10%20HyperV%20Full%20Lab%20with%20DSC%20and%20AzureDevOps.ps1) and demonstrates, how to assign the following values to all machines without repeating it over and over again.  
@@ -174,6 +180,8 @@ PowerShell Workshop Content
   $psSession | Remove-PSSession
   ```
 
+&nbsp;
+
 ## Terms
 - Class / Type
   
@@ -227,6 +235,7 @@ PowerShell Workshop Content
     $a = & $sb
     ```
 
+&nbsp;
 
 ## When to use which kind of bracket?
 
@@ -257,5 +266,3 @@ PowerShell Workshop Content
     ```
 
 - Square brackets
-
-
