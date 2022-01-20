@@ -245,7 +245,7 @@ PowerShell Workshop Content
   $a.ToString()
   ```
 
-  - Properties
+- Properties
 
   Data that is defined on an object. Properties like methods can only be access on an object like this:
 
@@ -257,7 +257,7 @@ PowerShell Workshop Content
 
   Is a collective term for everything a class or object provides. In PowerShell it usually referrers to methods and properties.
 
-  - Scriptblock
+- Scriptblock
 
     Scriptblock are units of codes like functions but without a name.
 
@@ -265,6 +265,18 @@ PowerShell Workshop Content
     $sb = { Get-Date }
     $a = & $sb
     ```
+
+- Parameter
+  
+  A parameter is a special kind of variable used in a function or script to refer to one of the pieces of data provided as input.
+
+- Argument
+
+  An argument is the actual input expression passed/supplied to a function that is taken by one of the function's parameters.
+
+- Attribute
+
+  An attribute is a specification that defines a property of an object or element. For example, you can use the Parameter attribute to specify a parameter and set it as mandatory or as pipeline input.
 
 &nbsp;
 
