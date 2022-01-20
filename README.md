@@ -25,6 +25,11 @@ PowerShell Workshop Content
   - https://www.powershellgallery.com/packages/NTFSSecurity/4.2.6
   - https://github.com/raandree/NTFSSecurity
 
+- Creating a simple of complex lab environment in just minutes with PowerShell
+  - [AutomatedLab](https://automatedlab.org/en/latest/)
+  - [Getting started with AutomatedLab](https://www.youtube.com/watch?v=lrPlRvFR5fA)
+  - [Powershell Automated Lab Demo (PowerShell Usergroup Inn-Salzach)](https://www.youtube.com/watch?v=LLg8o2FcaKw)
+
 &nbsp;
 
 ## Generic Code Samples
@@ -211,6 +216,302 @@ PowerShell Workshop Content
   }
   ```
 
+- ### Adding custom colunms into a output table
+
+  ```powershell
+  dir -File E:\LabSources\ISOs | Format-Table -Property Name, Length, @{
+    Name = 'Size'
+    Expression = { [System.Math]::Round($_.Length / 1GB, 2) },
+    @{
+      Name = 'Random'
+      Expression = { Get-Random }
+    }
+  }
+  ```
+
+- ### Query and set registry values directly without changing the location to the ```HKLM:``` or ```HKCU:``` drive:
+
+  ```powershell
+  #get a specific value
+  Get-ItemPropertyValue -Path HKLM:\SYSTEM\CurrentControlSet\Services\winrm -Name Start
+
+  #set a sepcific value
+  Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Services\winrm -Name Start -Value 2
+
+  #get all item properties (registry values) inside a key
+  Get-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Services\winrm
+  ```
+
+- ### The simplicity of a for-each loop compared to what was available in old programming languages. All these code blocks do roughly the same:
+
+  ```powershell
+  1..10 | ForEach-Object {
+      "Hello World $_"
+  }
+
+  for ($x = 1; $x -le 10; $x++) 
+  {
+      "Hello World $x"
+  }
+
+  $list = 1..10
+  $i = 0
+  do
+  {
+      $item = $list[$i]
+      "Hello World $item"
+      $i = $i + 1
+  } until (-not $item)
+  ```
+
+- ### Array Performance
+
+  Manipulating in PowerShell is much easier than on C#, VB.net or VBScript. However, in the background the same things happen: The array needs ot re-dimensioned.
+
+  In VBScript this looks like this. Keep in mind that this re-dimensioning has to be done everytime you add an item to the array.
+
+  ```vbs
+  Dim upper As Long
+  Dim myArray() as String
+  upper = UBound(myArray) 
+  ReDim myArray(upper + 1)
+  ```
+
+  In PowerShell this happens behind the scenes and can have a dramatic impact on your code's performance. Much faster is the ```System.Collections.ArrayList```.
+
+  ```powershell
+  $a = @()
+
+  1..100000 | ForEach-Object {
+      $a += "Test $_"
+  }
+
+  $a.Count
+
+  #--------------------------------------------
+
+  $al = New-Object System.Collections.ArrayList
+
+  1..100000 | ForEach-Object {
+      $null = $al.Add("Test $_") #| Out-Null
+  }
+
+  $al.Count
+  ```
+
+- ### Remote Data Gathering
+
+  This is a perfect example when using the ```[PSCustomObject]``` type helps a lot in organizing data. Each remote machine returns one object.
+
+    ```powershell
+  $cmd = {
+
+      if ((Get-Service -Name W32Time).Status -ne 'Running') {
+          Start-Service -Name W32Time
+      }
+      [pscustomobject]@{
+          Processes = Get-Process
+          APplicationEvents = Get-EventLog -LogName System -Newest 500
+          SystemEvents = Get-EventLog -LogName Application -Newest 500
+          OsInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+          Volumes = Get-Volume
+          Date = Get-Date
+          IsDiskSpaceCritical = if (Get-Volume | Where-Object { $_.SizeRemaining -lt 20GB -and $_.Size -gt 10GB }) {
+              $true
+          } else {
+              $false
+          }
+          Services = Get-Service
+      }
+  }
+
+  #Using different credentials
+  #$cred = Get-Credential -Credential contoso\install and credential export / import
+  $cred = New-Object pscredential('contoso\install', ('Somepass1' | ConvertTo-SecureString -AsPlainText -Force))
+  $cred | Export-Clixml -Path C:\cred.xml
+  $cred = Import-Clixml -Path C:\cred.xml
+
+  $computers = Get-ADComputer -Filter *
+  $result = Invoke-Command -ComputerName $computers.DNSHostName -ScriptBlock $cmd -Credential $cred
+  return
+
+  #Querying the data
+  $result | Where-Object { $_.IsDiskSpaceCritical }
+  $result.Volumes | Where-Object { $_.SizeRemaining -lt 20GB -and $_.Size -gt 10GB }
+  $result | Format-Table -Property PSComputerName, IsDiskSpaceCritical
+  ```
+
+- ### Hashtable manipulation and file export
+
+  There are many more ways to interact with hashtables. This demonstrates just the most "PowerShellish" one
+
+  ```powershell
+  $computers = @{
+    FileServer1 = @{
+        CPU = 'Intel i9 K9543453'
+        Memory = '64GB'
+        Serial = 'x58345038'
+        Storage = @{
+            Type = 'SSD'
+            Size = 512GB
+        },
+        @{
+            Type = 'HDD'
+            Size = 8TB
+        }
+    }
+    DC1 = @{
+        CPU = 'Intel i9 K9543453'
+        Memory = '32GB'
+        Serial = 'x546456'
+        Storage = @{
+            Type = 'SSD'
+            Size = 512GB
+        }
+    }
+  }
+  $computers.FileServer1.Storage[0].Size
+
+  $newComputer = @{
+      CPU = 'Intel i9 K9543453'
+      Memory = '256GB'
+      Serial = 'x690943'
+      Storage = @{
+          Type = 'SSD'
+          Size = 8GB
+      },
+      @{
+          Type = 'SSD'
+          Size = 8GB
+      },
+      @{
+          Type = 'SSD'
+          Size = 8GB
+      },
+      @{
+          Type = 'SSD'
+          Size = 8GB
+      }
+  }
+
+  $computers += $newComputer
+  $computers | ConvertTo-Json -Depth 10 | Out-File d:\computers.json
+  ```
+
+- ### Speed demo persistent sessions
+  When having to do a few or even many roundtrips to a machine, creating a persistent session can increase the performance a lot.
+
+  ```powershell
+  $start = Get-Date
+  1..10 | ForEach-Object {
+      Invoke-Command -ComputerName dscdc01 -ScriptBlock { Get-Date }
+  }
+  $end = Get-Date
+
+  "$($end - $start)"
+
+  #-----------------------------------------------
+
+  $start = Get-Date
+  $s = New-PSSession -ComputerName dscdc01
+  1..10 | ForEach-Object {
+      Invoke-Command -Session $s -ScriptBlock { Get-Date }
+  }
+  $s | Remove-PSSession
+  $end = Get-Date
+
+  "$($end - $start)"
+  ```
+
+- ### Clear Microsoft Edge Cookies locally and remotely
+
+  ```powershell
+  function Clear-EdgeLocalBrowserCache {
+
+      param (
+          [Parameter(Mandatory)]
+          [string]$Username
+      )
+
+      $path = "C:\Users\$userName\AppData\Local\Microsoft\Edge\User Data\Default"
+      $cookieFilePath = Join-Path -Path $path -ChildPath Cookies
+
+      $edgeProcesses = Get-Process -Name msedge -IncludeUserName -ErrorAction SilentlyContinue | Where-Object UserName -like "*$userName"
+      if ($edgeProcesses) {
+          Write-Host "The user '$Username' is currently running Edge, killing all Edge processes"
+          Write-Host "Edge process count $($edgeProcesses.Count)"
+          $edgeProcesses | Stop-Process -Force -PassThru
+          Start-Sleep -Seconds 5
+      }
+
+      if (Test-Path -Path $cookieFilePath) {
+          Write-Host "Found Cookie file in path '$cookieFilePath'"
+          Remove-Item -Path $cookieFilePath -Force
+      }
+      else {
+          Write-Error "No Cookie file in path '$cookieFilePath' found"
+      }
+  }
+
+  function Clear-EdgeRemoteBrowserCache {
+      param (
+          [Parameter(Mandatory)]
+          [string]$Username,
+
+          [Parameter(Mandatory)]
+          [string]$ComputerName
+      )
+
+      Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+          function Clear-EdgeLocalBrowserCache {
+
+              param (
+                  [Parameter(Mandatory)]
+                  [string]$Username
+              )
+
+              $path = "C:\Users\$userName\AppData\Local\Microsoft\Edge\User Data\Default"
+              $cookieFilePath = Join-Path -Path $path -ChildPath Cookies
+
+              $edgeProcesses = Get-Process -Name msedge -IncludeUserName -ErrorAction SilentlyContinue | Where-Object UserName -like "*$userName"
+              if ($edgeProcesses) {
+                  Write-Host "The user '$Username' is currently running Edge, killing all Edge processes"
+                  Write-Host "Edge process count $($edgeProcesses.Count)"
+                  $edgeProcesses | Stop-Process -Force -PassThru
+                  Start-Sleep -Seconds 5
+              }
+
+              if (Test-Path -Path $cookieFilePath) {
+                  Write-Host "Found Cookie file in path '$cookieFilePath'"
+                  Remove-Item -Path $cookieFilePath -Force
+              }
+              else {
+                  Write-Error "No Cookie file in path '$cookieFilePath' found"
+              }
+          }
+
+          Clear-EdgeLocalBrowserCache -Username $args[0]
+      } -ArgumentList $Username
+  }
+  ```
+
+  > Note: The Cookies file is a Sqlite database file. With the ```PSSQLite``` PowerShell module you can remove individual cookies from the the file.
+
+  ```powershell
+  Install-Module pssqlite
+  $c = New-SQLiteConnection -DataSource 'C:\Users\install\AppData\Local\Microsoft\Edge\User Data\Default\Cookies' -Open $true
+  Invoke-SqliteQuery -Query "DELETE FROM cookies WHERE host_key LIKE '%heise%';" -SQLiteConnection $ds
+  ```
+
+- Send a PowerShell module to another machine over a PSSession
+
+  ```powershell
+  $s = New-PSSession -ComputerName dscfile01
+  Send-ModuleToPSSession -Session $s -Module (Get-Module -Name PSSQLite -ListAvailable) -Scope AllUsers
+  $s | Remove-PSSession
+  ```
+
+
 &nbsp;
 
 ## Terms
@@ -270,13 +571,28 @@ PowerShell Workshop Content
   
   A parameter is a special kind of variable used in a function or script to refer to one of the pieces of data provided as input.
 
+  ```powershell
+  param (
+    [Parameter(Mandatory)
+    [string[]]$ComputerName
+  )
+  ```
+
 - Argument
 
-  An argument is the actual input expression passed/supplied to a function that is taken by one of the function's parameters.
+  An argument is the actual input expression passed/supplied to a function that is taken by one of the function's parameters, in this case ```w32time```
+
+  ```powershell
+  Get-Service -Name w32time
+  ```
 
 - Attribute
 
   An attribute is a specification that defines a property of an object or element. For example, you can use the Parameter attribute to specify a parameter and set it as mandatory or as pipeline input.
+
+  ```powershell
+  [Parameter()]
+  ```
 
 &nbsp;
 
@@ -295,17 +611,58 @@ PowerShell Workshop Content
 
     - To call a method
 
+      ```powershell
+      $d = Get-Date
+      $d.AddDays(1)
+      ```
+
+    - If you want to create an empty array or   convert a single object into an array ob objects
+
+      ```powershell
+      $array = @()
+      $array = @(1)
+      ```
+
 - Curly brackets
 
     - To indicate scripts blocks. Used in If, ForEach, functions, etc.
 
-    ```powershell
-    if ($a -gt 5){
-      'yes'
-    }
-    else {
-      'no'
-    }
-    ```
+      ```powershell
+      if ($a -gt 5){
+        'yes'
+      }
+      else {
+        'no'
+      }
+      ```
+
+    - To define hashtables
+
+      ```powershell
+      $ht1 = @{}
+
+      $ht2 = @{
+        key1  = 'value1'
+        Model = 'Golf'
+      }
+      ```
 
 - Square brackets
+
+  - Square brackets are used to access elements in an array:
+
+    ```powershell
+    $a = 1,2,3
+    $a[0]
+    $a[-1]
+    ```
+
+  - Square brackets are used to declare types or cast data
+
+    ```powershell
+    [int]$i = 0
+    $a = [int]'123'
+
+    $al = [System.Collections.ArrayList]::new()
+    [System.Math]::Round(1.323434, 2)
+    ```
